@@ -84,11 +84,11 @@ public class YoutubeParsingHelper {
      * Therefore, YouTube & Google should not track the user,
      * because they did not give consent. The three digits at the end can be random.
      */
-    private static final String CONSENT_COOKIE_VALUE = "PENDING+999";
+    public static final String CONSENT_COOKIE_VALUE = "PENDING+999";
     /**
      * Youtube <code>CONSENT</code> cookie. Should prevent redirect to consent.youtube.com
      */
-    private static final String CONSENT_COOKIE = "CONSENT=" + CONSENT_COOKIE_VALUE;
+    public static final String CONSENT_COOKIE = "CONSENT=" + CONSENT_COOKIE_VALUE;
 
     private static final String FEED_BASE_CHANNEL_ID = "https://www.youtube.com/feeds/videos.xml?channel_id=";
     private static final String FEED_BASE_USER = "https://www.youtube.com/feeds/videos.xml?user=";
