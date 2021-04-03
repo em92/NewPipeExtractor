@@ -79,6 +79,17 @@ public class YoutubeParsingHelper {
     private static final String[] HARDCODED_YOUTUBE_MUSIC_KEYS = {"AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30", "67", "0.1"};
     private static String[] youtubeMusicKeys;
 
+    /**
+     * <code>PENDING+999</code> means that the user did not yet submit their choices.
+     * Therefore, YouTube & Google should not track the user,
+     * because they did not give consent. The three digits at the end can be random.
+     */
+    private static final String CONSENT_COOKIE_VALUE = "PENDING+999";
+    /**
+     * Youtube <code>CONSENT</code> cookie. Should prevent redirect to consent.youtube.com
+     */
+    private static final String CONSENT_COOKIE = "CONSENT=" + CONSENT_COOKIE_VALUE;
+
     private static final String FEED_BASE_CHANNEL_ID = "https://www.youtube.com/feeds/videos.xml?channel_id=";
     private static final String FEED_BASE_USER = "https://www.youtube.com/feeds/videos.xml?user=";
 
@@ -631,6 +642,8 @@ public class YoutubeParsingHelper {
         final Map<String, List<String>> headers = new HashMap<>();
         headers.put("X-YouTube-Client-Name", Collections.singletonList("1"));
         headers.put("X-YouTube-Client-Version", Collections.singletonList(getClientVersion()));
+        // CONSENT header to prevent redirect to consent.youtube.com
+        headers.put("Cookie", Collections.singletonList(CONSENT_COOKIE));
 
         final Response response = getDownloader().get(url, headers, localization);
         getValidJsonResponseBody(response);
@@ -657,6 +670,13 @@ public class YoutubeParsingHelper {
         Map<String, List<String>> headers = new HashMap<>();
         headers.put("X-YouTube-Client-Name", Collections.singletonList("1"));
         headers.put("X-YouTube-Client-Version", Collections.singletonList(getClientVersion()));
+        // CONSENT header to prevent redirect to consent.youtube.com
+        if (headers.get("Cookie") == null) {
+            headers.put("Cookie",  Collections.singletonList(CONSENT_COOKIE));
+        } else {
+            headers.get("Cookie").add(CONSENT_COOKIE);
+        }
+
         final Response response = getDownloader().get(url, headers, localization);
 
         return JsonUtils.toJsonArray(getValidJsonResponseBody(response));
@@ -665,9 +685,11 @@ public class YoutubeParsingHelper {
     public static JsonArray getJsonResponse(final Page page, final Localization localization)
             throws IOException, ExtractionException {
         final Map<String, List<String>> headers = new HashMap<>();
-        if (!isNullOrEmpty(page.getCookies())) {
-            headers.put("Cookie", Collections.singletonList(join(";", "=", page.getCookies())));
-        }
+
+        // CONSENT header to prevent redirect to consent.youtube.com
+        page.getCookies().put("CONSENT", CONSENT_COOKIE_VALUE);
+        headers.put("Cookie", Collections.singletonList(join(";", "=", page.getCookies())));
+
         headers.put("X-YouTube-Client-Name", Collections.singletonList("1"));
         headers.put("X-YouTube-Client-Version", Collections.singletonList(getClientVersion()));
 
