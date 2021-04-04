@@ -29,6 +29,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -438,6 +439,7 @@ public class YoutubeParsingHelper {
         headers.put("Origin", Collections.singletonList("https://music.youtube.com"));
         headers.put("Referer", Collections.singletonList("music.youtube.com"));
         headers.put("Content-Type", Collections.singletonList("application/json"));
+        addCookieHeader(headers);
 
         final String response = getDownloader().post(url, headers, json).responseBody();
 
@@ -640,15 +642,70 @@ public class YoutubeParsingHelper {
     public static Response getResponse(final String url, final Localization localization)
             throws IOException, ExtractionException {
         final Map<String, List<String>> headers = new HashMap<>();
-        headers.put("X-YouTube-Client-Name", Collections.singletonList("1"));
-        headers.put("X-YouTube-Client-Version", Collections.singletonList(getClientVersion()));
-        // CONSENT header to prevent redirect to consent.youtube.com
-        headers.put("Cookie", Collections.singletonList(CONSENT_COOKIE));
+        addYouTubeHeaders(headers);
 
         final Response response = getDownloader().get(url, headers, localization);
         getValidJsonResponseBody(response);
 
         return response;
+    }
+
+    public static JsonArray getJsonResponse(final String url, final Localization localization)
+            throws IOException, ExtractionException {
+        Map<String, List<String>> headers = new HashMap<>();
+        addYouTubeHeaders(headers);
+
+        final Response response = getDownloader().get(url, headers, localization);
+
+        return JsonUtils.toJsonArray(getValidJsonResponseBody(response));
+    }
+
+    public static JsonArray getJsonResponse(final Page page, final Localization localization)
+            throws IOException, ExtractionException {
+        final Map<String, List<String>> headers = new HashMap<>();
+        addYouTubeHeaders(headers);
+
+        final Response response = getDownloader().get(page.getUrl(), headers, localization);
+
+        return JsonUtils.toJsonArray(getValidJsonResponseBody(response));
+    }
+
+    /**
+     * Add required headers and cookies to an existing headers Map.
+     * @see #addClientInfoHeaders(Map)
+     * @see #addCookieHeader(Map)
+     */
+    public static void addYouTubeHeaders(final Map<String, List<String>> headers)
+            throws IOException, ExtractionException {
+        addClientInfoHeaders(headers);
+        addCookieHeader(headers);
+    }
+
+    /**
+     * Add the <code>X-YouTube-Client-Name</code> and <code>X-YouTube-Client-Version</code> headers.
+     * @param headers The headers which should be completed
+     */
+    public static void addClientInfoHeaders(final Map<String, List<String>> headers)
+            throws IOException, ExtractionException {
+        if (headers.get("X-YouTube-Client-Name") == null) {
+            headers.put("X-YouTube-Client-Name", Collections.singletonList("1"));
+        }
+        if (headers.get("X-YouTube-Client-Version") == null) {
+            headers.put("X-YouTube-Client-Version", Collections.singletonList(getClientVersion()));
+        }
+    }
+
+    /**
+     * Add the <code>CONSENT</code> cookie to prevent redirect to <code>consent.youtube.com</code>
+     * @see #CONSENT_COOKIE
+     * @param headers the headers which should be completed
+     */
+    public static void addCookieHeader(final Map<String, List<String>> headers) {
+        if (headers.get("Cookie") == null) {
+            headers.put("Cookie", Arrays.asList(CONSENT_COOKIE));
+        } else {
+            headers.get("Cookie").add(CONSENT_COOKIE);
+        }
     }
 
     public static String extractCookieValue(final String cookieName, final Response response) {
@@ -663,39 +720,6 @@ public class YoutubeParsingHelper {
             }
         }
         return result;
-    }
-
-    public static JsonArray getJsonResponse(final String url, final Localization localization)
-            throws IOException, ExtractionException {
-        Map<String, List<String>> headers = new HashMap<>();
-        headers.put("X-YouTube-Client-Name", Collections.singletonList("1"));
-        headers.put("X-YouTube-Client-Version", Collections.singletonList(getClientVersion()));
-        // CONSENT header to prevent redirect to consent.youtube.com
-        if (headers.get("Cookie") == null) {
-            headers.put("Cookie",  Collections.singletonList(CONSENT_COOKIE));
-        } else {
-            headers.get("Cookie").add(CONSENT_COOKIE);
-        }
-
-        final Response response = getDownloader().get(url, headers, localization);
-
-        return JsonUtils.toJsonArray(getValidJsonResponseBody(response));
-    }
-
-    public static JsonArray getJsonResponse(final Page page, final Localization localization)
-            throws IOException, ExtractionException {
-        final Map<String, List<String>> headers = new HashMap<>();
-
-        // CONSENT header to prevent redirect to consent.youtube.com
-        page.getCookies().put("CONSENT", CONSENT_COOKIE_VALUE);
-        headers.put("Cookie", Collections.singletonList(join(";", "=", page.getCookies())));
-
-        headers.put("X-YouTube-Client-Name", Collections.singletonList("1"));
-        headers.put("X-YouTube-Client-Version", Collections.singletonList(getClientVersion()));
-
-        final Response response = getDownloader().get(page.getUrl(), headers, localization);
-
-        return JsonUtils.toJsonArray(getValidJsonResponseBody(response));
     }
 
     /**

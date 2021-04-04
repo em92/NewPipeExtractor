@@ -15,6 +15,7 @@ import java.net.URLEncoder;
 import java.util.*;
 
 import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.CONSENT_COOKIE_VALUE;
+import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.addCookieHeader;
 import static org.schabi.newpipe.extractor.utils.Utils.UTF_8;
 
 /*
@@ -55,9 +56,8 @@ public class YoutubeSuggestionExtractor extends SuggestionExtractor {
                 + "&gl=" + URLEncoder.encode(getExtractorContentCountry().getCountryCode(), UTF_8)
                 + "&q=" + URLEncoder.encode(query, UTF_8);
 
-        // CONSENT header to prevent redirect to consent.youtube.com
         final Map<String, List<String>> headers = new HashMap<>();
-        headers.put("CONSENT", Collections.singletonList(CONSENT_COOKIE_VALUE));
+        addCookieHeader(headers);
 
         String response = dl.get(url, headers, getExtractorLocalization()).responseBody();
         // trim JSONP part "JP(...)"
